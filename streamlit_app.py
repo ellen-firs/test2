@@ -22,6 +22,15 @@ def get_choices(query):
     conn.close()
     return [row[0] for row in rows]
 
+# Функция для получения дней недели из базы данных
+def get_days_of_week():
+    conn = sqlite3.connect('schedule.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute("SELECT название FROM Дни_недели ORDER BY день_id")
+    rows = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
+
 # Функция для определения четности недели
 def get_week_parity(date):
     # 2 сентября 2024 года - нечетная неделя (это будем считать стартом отсчета)
@@ -32,7 +41,8 @@ def get_week_parity(date):
 
 # Функция для определения дня недели
 def get_day_of_week(date):
-    return date.strftime("%A")  # Получаем день недели в формате, например, 'Monday'
+    days_of_week = get_days_of_week()  # Получаем дни недели из базы
+    return days_of_week[date.weekday()]  # Преобразуем день недели в строку (например, 'Понедельник')
 
 # Загружаем доступные значения для селектбоксов
 groups = get_choices("SELECT название FROM Группы")
@@ -104,6 +114,10 @@ if st.button("Показать расписание"):
     # Добавляем проверку по четности недели
     query += " AND Расписание.четность = ?"
     params.append(week_parity)
+    
+    # Добавляем фильтрацию по дню недели
+    query += " AND Дни_недели.название = ?"
+    params.append(day_of_week)
 
     # Получаем данные из базы
     schedule = get_data(query, params)
