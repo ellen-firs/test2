@@ -43,12 +43,15 @@ buildings = get_choices("SELECT DISTINCT корпус FROM Расписание"
 # Выбор даты
 selected_date = st.date_input("Выберите дату", datetime.today())
 
+# Преобразуем строку в объект datetime
+selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
+
 # Определяем день недели и четность недели на основе выбранной даты
 day_of_week = get_day_of_week(selected_date)
 week_parity = get_week_parity(selected_date)
 
 # Отображаем выбранные день недели и четность
-st.write(f"Выбранная дата: {selected_date}")
+st.write(f"Выбранная дата: {selected_date.date()}")
 st.write(f"Это {day_of_week} и {week_parity} неделя.")
 
 # Селектбоксы для выбора параметров
