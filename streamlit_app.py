@@ -4,38 +4,36 @@ import streamlit as st
 
 # Функция для получения данных из базы данных
 def get_data(query, params):
-    conn = sqlite3.connect('schedule.db', check_same_thread=False)  # Отключаем проверку на поток
+    conn = sqlite3.connect('schedule.db', check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute(query, params)
     columns = [description[0] for description in cursor.description]
     rows = cursor.fetchall()
     conn.close()
-    
-    # Преобразуем результат в DataFrame
     return pd.DataFrame(rows, columns=columns)
 
-# Функция для получения доступных опций из базы данных
+# Функция для получения доступных опций для селектбоксов
 def get_choices(query):
-    conn = sqlite3.connect('schedule.db', check_same_thread=False)  # Отключаем проверку на поток
+    conn = sqlite3.connect('schedule.db', check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute(query)
     rows = cursor.fetchall()
     conn.close()
-    
     return [row[0] for row in rows]
 
 # Загружаем доступные значения для селектбоксов
-groups = [''] + get_choices("SELECT название FROM Группы")
-teachers = [''] + get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
-audiences = [''] + get_choices("SELECT номер FROM Аудитории")
-buildings = [''] + get_choices("SELECT DISTINCT корпус FROM Расписание")
+groups = get_choices("SELECT название FROM Группы")
+teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
+audiences = get_choices("SELECT номер FROM Аудитории")
+buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
+parity_options = ['нечетная', 'четная']
 
 # Селектбоксы для выбора параметров
-selected_group = st.selectbox("Выберите группу", groups)
-selected_teacher = st.selectbox("Выберите преподавателя", teachers)
-selected_audience = st.selectbox("Выберите аудиторию", audiences)
-selected_building = st.selectbox("Выберите корпус", buildings)
-parity = st.selectbox("Выберите четность недели", ['нечетная', 'четная'])
+selected_group = st.selectbox("Выберите группу", [""] + groups)
+selected_teacher = st.selectbox("Выберите преподавателя", [""] + teachers)
+selected_audience = st.selectbox("Выберите аудиторию", [""] + audiences)
+selected_building = st.selectbox("Выберите корпус", [""] + buildings)
+selected_parity = st.selectbox("Выберите четность недели", [""] + parity_options)
 
 # Кнопка "Показать", чтобы выполнить запрос
 if st.button("Показать расписание"):
@@ -61,7 +59,7 @@ if st.button("Показать расписание"):
     
     params = []
 
-    # Добавление условий в запрос в зависимости от выбранных значений
+    # Добавляем фильтры в запрос в зависимости от выбора пользователя
     if selected_group:
         query += " AND Группы.название = ?"
         params.append(selected_group)
@@ -78,15 +76,15 @@ if st.button("Показать расписание"):
         query += " AND Расписание.корпус = ?"
         params.append(selected_building)
     
-    if parity:
+    if selected_parity:
         query += " AND Расписание.четность = ?"
-        params.append(parity)
+        params.append(selected_parity)
 
-    # Получение данных из базы данных
+    # Получаем данные из базы
     schedule = get_data(query, params)
 
-    # Отображение результатов
+    # Отображаем результаты
     if schedule.empty:
-        st.warning("Результат запроса пуст. Проверьте параметры.")
+        st.warning("По вашим фильтрам расписание не найдено.")
     else:
         st.dataframe(schedule)
