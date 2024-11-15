@@ -25,10 +25,10 @@ def get_choices(query):
     return [row[0] for row in rows]
 
 # Загружаем доступные значения для селектбоксов
-groups = get_choices("SELECT название FROM Группы")
-teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
-audiences = get_choices("SELECT номер FROM Аудитории")
-buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
+groups = [''] + get_choices("SELECT название FROM Группы")
+teachers = [''] + get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
+audiences = [''] + get_choices("SELECT номер FROM Аудитории")
+buildings = [''] + get_choices("SELECT DISTINCT корпус FROM Расписание")
 
 # Селектбоксы для выбора параметров
 selected_group = st.selectbox("Выберите группу", groups)
