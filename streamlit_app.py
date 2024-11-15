@@ -10,28 +10,42 @@ st.markdown("""
     <style>
     /* Стилизация заголовка */
     h1 {
-        color: inherit; /* Наследуем цвет, чтобы он адаптировался под темный/светлый режим */
+        color: inherit;
         text-align: center;
     }
-    
-    /* Стилизация рамок селектбоксов и кнопки с нейтральным фоном и адаптивными рамками */
-    .stSelectbox, .stButton {
+
+    /* Базовая стилизация для селектбоксов, даты и кнопок */
+    .stSelectbox, .stDateInput, .stButton {
         border-radius: 10px;
-        background-color: rgba(240, 240, 240, 0.8); /* светло-серый с прозрачностью */
         padding: 5px;
-        box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.1); /* легкий тень */
+    }
+
+    /* Стили для светлого режима */
+    @media (prefers-color-scheme: light) {
+        .stSelectbox, .stDateInput, .stButton {
+            background-color: rgba(240, 240, 240, 0.9); /* Светло-серый фон */
+            border: 1px solid rgba(200, 200, 200, 0.8); /* Светлая рамка */
+        }
+    }
+
+    /* Стили для темного режима */
+    @media (prefers-color-scheme: dark) {
+        .stSelectbox, .stDateInput, .stButton {
+            background-color: rgba(50, 50, 50, 0.9); /* Тёмно-серый фон */
+            border: 1px solid rgba(100, 100, 100, 0.9); /* Более тёмная рамка */
+        }
     }
 
     /* Стилизация таблицы */
     .stDataFrame table {
-        border: 1px solid rgba(200, 200, 200, 0.5); /* светлая рамка для таблицы */
+        border: 1px solid rgba(200, 200, 200, 0.5);
     }
     .stDataFrame table th {
-        background-color: rgba(230, 230, 230, 0.8); /* светлый фон заголовка */
-        color: inherit; /* Наследуем цвет для адаптации */
+        background-color: rgba(230, 230, 230, 0.8);
+        color: inherit;
     }
     .stDataFrame table td {
-        background-color: rgba(250, 250, 250, 0.8); /* почти белый фон ячеек */
+        background-color: rgba(250, 250, 250, 0.8);
         color: inherit;
     }
     </style>
