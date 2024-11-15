@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 import streamlit as st
+from datetime import datetime
 
 # Функция для получения данных из базы данных
 def get_data(query, params):
@@ -21,6 +22,14 @@ def get_choices(query):
     conn.close()
     return [row[0] for row in rows]
 
+# Функция для определения четности недели
+def get_week_parity(date):
+    # 2 сентября 2024 года - нечетная неделя (это будем считать стартом отсчета)
+    start_date = datetime(2024, 9, 2)  # 2 сентября 2024
+    delta = date - start_date
+    week_number = delta.days // 7
+    return 'нечетная' if week_number % 2 != 0 else 'четная'
+
 # Загружаем доступные значения для селектбоксов
 groups = get_choices("SELECT название FROM Группы")
 teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
@@ -28,12 +37,17 @@ audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
 parity_options = ['нечетная', 'четная']
 
+# Выбор даты
+selected_date = st.date_input("Выберите дату", datetime.today())
+
+# Определяем четность недели на основе выбранной даты
+week_parity = get_week_parity(selected_date)
+
 # Селектбоксы для выбора параметров
 selected_group = st.selectbox("Выберите группу", [""] + groups)
 selected_teacher = st.selectbox("Выберите преподавателя", [""] + teachers)
 selected_audience = st.selectbox("Выберите аудиторию", [""] + audiences)
 selected_building = st.selectbox("Выберите корпус", [""] + buildings)
-selected_parity = st.selectbox("Выберите четность недели", [""] + parity_options)
 
 # Кнопка "Показать", чтобы выполнить запрос
 if st.button("Показать расписание"):
@@ -76,9 +90,9 @@ if st.button("Показать расписание"):
         query += " AND Расписание.корпус = ?"
         params.append(selected_building)
     
-    if selected_parity:
-        query += " AND Расписание.четность = ?"
-        params.append(selected_parity)
+    # Добавляем проверку по четности недели
+    query += " AND Расписание.четность = ?"
+    params.append(week_parity)
 
     # Получаем данные из базы
     schedule = get_data(query, params)
@@ -88,3 +102,6 @@ if st.button("Показать расписание"):
         st.warning("По вашим фильтрам расписание не найдено.")
     else:
         st.dataframe(schedule)
+
+    # Показать выбранную четность недели
+    st.write(f"Выбрана четность недели: {week_parity}")
