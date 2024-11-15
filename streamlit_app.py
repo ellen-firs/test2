@@ -52,14 +52,31 @@ def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, d
     conn.close()
     return schedule_df
 
+# Функция для получения всех уникальных значений для фильтров из БД
+def get_unique_values():
+    conn = get_connection()
+
+    # Получаем уникальные значения для группы, преподавателя и аудитории
+    groups = pd.read_sql("SELECT DISTINCT группа_id FROM Расписание", conn)
+    teachers = pd.read_sql("SELECT DISTINCT преподаватель_id FROM Расписание", conn)
+    classrooms = pd.read_sql("SELECT DISTINCT аудитория_id FROM Расписание", conn)
+    
+    conn.close()
+
+    return groups['группа_id'].tolist(), teachers['преподаватель_id'].tolist(), classrooms['аудитория_id'].tolist()
+
 # Основная функция Streamlit
 def main():
     st.title("Расписание занятий")
 
+    # Получаем уникальные значения для фильтров
+    groups, teachers, classrooms = get_unique_values()
+
     # Фильтры для группы, преподавателя, аудитории
-    group_id = st.selectbox('Выберите группу', ['A-01-21', 'A-02-21', 'B-01-21'])  # Пример
-    teacher_id = st.selectbox('Выберите преподавателя', ['Преподаватель 1', 'Преподаватель 2'])  # Пример
-    classroom_id = st.selectbox('Выберите аудиторию', ['C-409', 'B-308', 'M-307'])  # Пример
+    group_id = st.selectbox('Выберите группу', groups)
+    teacher_id = st.selectbox('Выберите преподавателя', teachers)
+    classroom_id = st.selectbox('Выберите аудиторию', classrooms)
+
     date = st.date_input('Выберите дату', datetime.now())
 
     # Выбор отображения: Список или Сетка
