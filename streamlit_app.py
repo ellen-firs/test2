@@ -51,19 +51,24 @@ audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
 types_of_classes = ['лекция', 'практика']  # Типы занятий
 
-# Выбор даты
-selected_date = st.date_input("Выберите дату", datetime.today())
+# Выбор даты (с возможностью оставить поле пустым)
+selected_date = st.date_input("Выберите дату (не обязательно)", None)
 
-# Преобразуем строку в объект datetime
-selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
+# Определяем переменные для дня недели и четности, если дата выбрана
+day_of_week = None
+week_parity = None
 
-# Определяем день недели и четность недели на основе выбранной даты
-day_of_week = get_day_of_week(selected_date)
-week_parity = get_week_parity(selected_date)
+if selected_date:
+    # Преобразуем строку в объект datetime
+    selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
 
-# Отображаем выбранные день недели и четность
-st.write(f"Выбранная дата: {selected_date.date()}")
-st.write(f"Это {day_of_week} и {week_parity} неделя.")
+    # Определяем день недели и четность недели на основе выбранной даты
+    day_of_week = get_day_of_week(selected_date)
+    week_parity = get_week_parity(selected_date)
+
+    # Отображаем выбранные день недели и четность
+    st.write(f"Выбранная дата: {selected_date.date()}")
+    st.write(f"Это {day_of_week} и {week_parity} неделя.")
 
 # Селектбоксы для выбора параметров
 selected_group = st.selectbox("Выберите группу", [""] + groups)
@@ -114,13 +119,15 @@ if st.button("Показать расписание"):
         query += " AND Расписание.корпус = ?"
         params.append(selected_building)
     
-    # Добавляем проверку по четности недели
-    query += " AND Расписание.четность = ?"
-    params.append(week_parity)
+    # Добавляем проверку по четности недели, если дата выбрана
+    if week_parity:
+        query += " AND Расписание.четность = ?"
+        params.append(week_parity)
     
-    # Добавляем фильтрацию по дню недели
-    query += " AND Дни_недели.название = ?"
-    params.append(day_of_week)
+    # Добавляем фильтрацию по дню недели, если дата выбрана
+    if day_of_week:
+        query += " AND Дни_недели.название = ?"
+        params.append(day_of_week)
     
     # Добавляем фильтрацию по типу занятия (лекция или практика)
     if selected_type:
@@ -137,4 +144,5 @@ if st.button("Показать расписание"):
         st.dataframe(schedule)
 
     # Показать выбранную четность недели
-    st.write(f"Выбрана четность недели: {week_parity}")
+    if week_parity:
+        st.write(f"Выбрана четность недели: {week_parity}")
