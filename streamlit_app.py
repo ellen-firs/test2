@@ -3,6 +3,40 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 
+st.set_page_config(page_title="Расписание занятий", page_icon="📅", layout="wide")
+
+# Добавляем стили для улучшения визуального оформления
+st.markdown("""
+    <style>
+    /* Стилизация заголовка */
+    h1 {
+        color: #4a7c59;
+        text-align: center;
+    }
+    
+    /* Стилизация селектбоксов и кнопки */
+    .stSelectbox, .stButton {
+        border-radius: 10px;
+        background-color: #e1f5d3;
+        padding: 5px;
+    }
+
+    /* Стилизация таблицы */
+    .stDataFrame table {
+        border: 1px solid #4a7c59;
+    }
+    .stDataFrame table th {
+        background-color: #b2d8b0;
+        color: #4a7c59;
+    }
+    .stDataFrame table td {
+        background-color: #f7fff7;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+st.title("📅 Расписание занятий")
+
 # Функция для получения данных из базы данных
 def get_data(query, params):
     conn = sqlite3.connect('schedule.db', check_same_thread=False)
@@ -13,7 +47,7 @@ def get_data(query, params):
     conn.close()
     return pd.DataFrame(rows, columns=columns)
 
-# Функция для получения доступных опций для селектбоксов
+# Функции для получения выборов
 def get_choices(query):
     conn = sqlite3.connect('schedule.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -22,7 +56,6 @@ def get_choices(query):
     conn.close()
     return [row[0] for row in rows]
 
-# Функция для получения дней недели из базы данных
 def get_days_of_week():
     conn = sqlite3.connect('schedule.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -31,55 +64,41 @@ def get_days_of_week():
     conn.close()
     return [row[0] for row in rows]
 
-# Функция для определения четности недели
 def get_week_parity(date):
-    # 2 сентября 2024 года - нечетная неделя (это будем считать стартом отсчета)
-    start_date = datetime(2024, 9, 2)  # 2 сентября 2024
+    start_date = datetime(2024, 9, 2)
     delta = date - start_date
     week_number = delta.days // 7
     return 'нечетная' if week_number % 2 == 0 else 'четная'
 
-# Функция для определения дня недели
 def get_day_of_week(date):
-    days_of_week = get_days_of_week()  # Получаем дни недели из базы
-    return days_of_week[date.weekday()]  # Преобразуем день недели в строку (например, 'Понедельник')
+    days_of_week = get_days_of_week()
+    return days_of_week[date.weekday()]
 
-# Загружаем доступные значения для селектбоксов
+# Загружаем доступные значения
 groups = get_choices("SELECT название FROM Группы")
 teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
 audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
-types_of_classes = ['лекция', 'практика']  # Типы занятий
-
-# Выбор даты (с возможностью оставить поле пустым)
-selected_date = st.date_input("Выберите дату (не обязательно)", None)
-
-# Определяем переменные для дня недели и четности, если дата выбрана
-day_of_week = None
-week_parity = None
-
-if selected_date:
-    # Преобразуем строку в объект datetime
-    selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
-
-    # Определяем день недели и четность недели на основе выбранной даты
-    day_of_week = get_day_of_week(selected_date)
-    week_parity = get_week_parity(selected_date)
-
-    # Отображаем выбранные день недели и четность
-    st.write(f"Выбранная дата: {selected_date.date()}")
-    st.write(f"Это {day_of_week} и {week_parity} неделя.")
+types_of_classes = ['лекция', 'практика']
 
 # Селектбоксы для выбора параметров
-selected_group = st.selectbox("Выберите группу", [""] + groups)
-selected_teacher = st.selectbox("Выберите преподавателя", [""] + teachers)
-selected_audience = st.selectbox("Выберите аудиторию", [""] + audiences)
-selected_building = st.selectbox("Выберите корпус", [""] + buildings)
-selected_type = st.selectbox("Выберите тип занятия", [""] + types_of_classes)  # Выбор типа занятия
+st.sidebar.header("Фильтры")
+selected_date = st.sidebar.date_input("Дата (не обязательно)")
+selected_group = st.sidebar.selectbox("Группа", [""] + groups)
+selected_teacher = st.sidebar.selectbox("Преподаватель", [""] + teachers)
+selected_audience = st.sidebar.selectbox("Аудитория", [""] + audiences)
+selected_building = st.sidebar.selectbox("Корпус", [""] + buildings)
+selected_type = st.sidebar.selectbox("Тип занятия", [""] + types_of_classes)
 
-# Кнопка "Показать", чтобы выполнить запрос
-if st.button("Показать расписание"):
-    # Базовый запрос
+# Определяем день недели и четность, если выбрана дата
+day_of_week, week_parity = None, None
+if selected_date:
+    selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
+    day_of_week = get_day_of_week(selected_date)
+    week_parity = get_week_parity(selected_date)
+    st.write(f"Выбранная дата: {selected_date.date()}, {day_of_week}, {week_parity} неделя")
+
+if st.sidebar.button("Показать расписание"):
     query = """
         SELECT 
             Дисциплины.название AS "Дисциплина",
@@ -89,7 +108,7 @@ if st.button("Показать расписание"):
             Аудитории.номер AS "Аудитория",
             Расписание.корпус AS "Корпус",
             Группы.название AS "Группа",
-            Расписание.тип_занятия AS "Тип занятия"  -- Добавляем тип занятия
+            Расписание.тип_занятия AS "Тип занятия"
         FROM Расписание
         JOIN Дисциплины ON Расписание.дисциплина_id = Дисциплины.дисциплина_id
         JOIN Преподаватели ON Расписание.преподаватель_id = Преподаватели.преподаватель_id
@@ -99,50 +118,31 @@ if st.button("Показать расписание"):
         JOIN Группы ON Расписание.группа_id = Группы.группа_id
         WHERE 1=1
     """
-    
     params = []
-
-    # Добавляем фильтры в запрос в зависимости от выбора пользователя
     if selected_group:
         query += " AND Группы.название = ?"
         params.append(selected_group)
-    
     if selected_teacher:
         query += " AND Преподаватели.имя || ' ' || Преподаватели.фамилия = ?"
         params.append(selected_teacher)
-    
     if selected_audience:
         query += " AND Аудитории.номер = ?"
         params.append(selected_audience)
-    
     if selected_building:
         query += " AND Расписание.корпус = ?"
         params.append(selected_building)
-    
-    # Добавляем проверку по четности недели, если дата выбрана
     if week_parity:
         query += " AND Расписание.четность = ?"
         params.append(week_parity)
-    
-    # Добавляем фильтрацию по дню недели, если дата выбрана
     if day_of_week:
         query += " AND Дни_недели.название = ?"
         params.append(day_of_week)
-    
-    # Добавляем фильтрацию по типу занятия (лекция или практика)
     if selected_type:
         query += " AND Расписание.тип_занятия = ?"
         params.append(selected_type)
-
-    # Получаем данные из базы
+    
     schedule = get_data(query, params)
-
-    # Отображаем результаты
     if schedule.empty:
         st.warning("По вашим фильтрам расписание не найдено.")
     else:
         st.dataframe(schedule)
-
-    # Показать выбранную четность недели
-    if week_parity:
-        st.write(f"Выбрана четность недели: {week_parity}")
