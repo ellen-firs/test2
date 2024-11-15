@@ -3,12 +3,12 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 
-# Подключение к базе данных SQLite
+# Функция для подключения к базе данных
 def get_connection():
     conn = sqlite3.connect("schedule.db")
     return conn
 
-# Загрузка расписания на основе фильтров
+# Функция для загрузки расписания с фильтрами
 def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, date=None):
     conn = get_connection()
     query = """
@@ -29,6 +29,7 @@ def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, d
     """
     params = []
 
+    # Применяем фильтры
     if group_id:
         query += " AND Расписание.группа_id = ?"
         params.append(group_id)
@@ -46,6 +47,7 @@ def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, d
         query += " AND Дни_недели.название = ?"
         params.append(day_of_week)
 
+    # Получаем данные
     schedule_df = pd.read_sql(query, conn, params=params)
     conn.close()
     return schedule_df
@@ -54,7 +56,7 @@ def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, d
 def main():
     st.title("Расписание занятий")
 
-    # Фильтры
+    # Фильтры для группы, преподавателя, аудитории
     group_id = st.selectbox('Выберите группу', ['A-01-21', 'A-02-21', 'B-01-21'])  # Пример
     teacher_id = st.selectbox('Выберите преподавателя', ['Преподаватель 1', 'Преподаватель 2'])  # Пример
     classroom_id = st.selectbox('Выберите аудиторию', ['C-409', 'B-308', 'M-307'])  # Пример
@@ -66,10 +68,13 @@ def main():
     # Кнопки для отображения
     if st.button("Показать расписание"):
         schedule = load_schedule(group_id=group_id, teacher_id=teacher_id, classroom_id=classroom_id)
-        if display_mode == 'Список':
-            st.write(schedule)
+        if schedule.empty:
+            st.write("Ура, выходной!")
         else:
-            st.table(schedule)
+            if display_mode == 'Список':
+                st.write(schedule)
+            else:
+                st.table(schedule)
 
     if st.button("Показать расписание на сегодня"):
         schedule = load_schedule(group_id=group_id, date=date)
