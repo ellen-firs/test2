@@ -37,7 +37,7 @@ def get_week_parity(date):
     start_date = datetime(2024, 9, 2)  # 2 сентября 2024
     delta = date - start_date
     week_number = delta.days // 7
-    return 'нечетная' if week_number % 2 != 0 else 'четная'
+    return 'нечетная' if week_number % 2 == 0 else 'четная'
 
 # Функция для определения дня недели
 def get_day_of_week(date):
