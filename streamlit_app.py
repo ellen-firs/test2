@@ -46,7 +46,10 @@ def get_day_of_week(date):
 
 # Функция для фильтрации с автодополнением
 def filter_choices(choices, query):
-    return [choice for choice in choices if query.lower() in choice.lower()]
+    if not query:  # Если запрос пустой, возвращаем все варианты
+        return choices
+    query = query.lower()
+    return [choice for choice in choices if isinstance(choice, str) and query in choice.lower()]
 
 # Загружаем доступные значения для селектбоксов
 groups = get_choices("SELECT название FROM Группы")
