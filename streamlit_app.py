@@ -51,10 +51,11 @@ audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
 
 # Выбор даты
-selected_date = st.date_input("Выберите дату", datetime.today())
+selected_date = st.date_input("Выберите дату (необязательно)", value=None)
 
-# Преобразуем строку в объект datetime
-selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
+# Преобразуем строку в объект datetime, если дата выбрана
+if selected_date:
+    selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
 
 # Селектбоксы для выбора параметров
 selected_group = st.selectbox("Выберите группу", [""] + groups)
