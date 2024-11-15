@@ -6,7 +6,8 @@ import datetime
 # Подключение к базе данных
 @st.cache_resource
 def get_connection():
-    return sqlite3.connect("schedule.db")
+    # Разрешаем использование соединения в разных потоках
+    return sqlite3.connect("schedule.db", check_same_thread=False)
 
 def get_data(query, params=()):
     try:
