@@ -37,19 +37,12 @@ def get_week_parity(date):
     start_date = datetime(2024, 9, 2)  # 2 сентября 2024
     delta = date - start_date
     week_number = delta.days // 7
-    return 'нечетная' if week_number % 2 != 0 else 'четная'
+    return 'нечетная' if week_number % 2 == 0 else 'четная'
 
 # Функция для определения дня недели
 def get_day_of_week(date):
     days_of_week = get_days_of_week()  # Получаем дни недели из базы
     return days_of_week[date.weekday()]  # Преобразуем день недели в строку (например, 'Понедельник')
-
-# Функция для фильтрации с автодополнением
-def filter_choices(choices, query):
-    if not query:  # Если запрос пустой, возвращаем все варианты
-        return choices
-    query = query.lower()
-    return [choice for choice in choices if isinstance(choice, str) and query in choice.lower()]
 
 # Загружаем доступные значения для селектбоксов
 groups = get_choices("SELECT название FROM Группы")
@@ -57,7 +50,7 @@ teachers = get_choices("SELECT имя || ' ' || фамилия FROM Препод
 audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
 
-# Ввод даты
+# Выбор даты
 selected_date = st.date_input("Выберите дату", datetime.today())
 
 # Преобразуем строку в объект datetime
@@ -71,25 +64,11 @@ week_parity = get_week_parity(selected_date)
 st.write(f"Выбранная дата: {selected_date.date()}")
 st.write(f"Это {day_of_week} и {week_parity} неделя.")
 
-# Ввод группы с автодополнением
-group_input = st.text_input("Введите название группы", "")
-filtered_groups = filter_choices(groups, group_input)
-selected_group = st.selectbox("Выберите группу", [""] + filtered_groups)
-
-# Ввод преподавателя с автодополнением
-teacher_input = st.text_input("Введите имя преподавателя", "")
-filtered_teachers = filter_choices(teachers, teacher_input)
-selected_teacher = st.selectbox("Выберите преподавателя", [""] + filtered_teachers)
-
-# Ввод аудитории с автодополнением
-audience_input = st.text_input("Введите номер аудитории", "")
-filtered_audiences = filter_choices(audiences, audience_input)
-selected_audience = st.selectbox("Выберите аудиторию", [""] + filtered_audiences)
-
-# Ввод корпуса с автодополнением
-building_input = st.text_input("Введите номер корпуса", "")
-filtered_buildings = filter_choices(buildings, building_input)
-selected_building = st.selectbox("Выберите корпус", [""] + filtered_buildings)
+# Селектбоксы для выбора параметров
+selected_group = st.selectbox("Выберите группу", [""] + groups)
+selected_teacher = st.selectbox("Выберите преподавателя", [""] + teachers)
+selected_audience = st.selectbox("Выберите аудиторию", [""] + audiences)
+selected_building = st.selectbox("Выберите корпус", [""] + buildings)
 
 # Кнопка "Показать", чтобы выполнить запрос
 if st.button("Показать расписание"):
