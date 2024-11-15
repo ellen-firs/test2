@@ -6,7 +6,7 @@ import datetime
 # Подключение к базе данных
 @st.cache_resource
 def get_connection():
-    return sqlite3.connect("schedule.db")  # Укажите путь к вашей базе данных
+    return sqlite3.connect("schedule.db")
 
 def get_data(query, params=()):
     try:
@@ -21,43 +21,46 @@ def get_data(query, params=()):
 
 st.title("Расписание")
 
-# Выбор параметров
+# Проверка данных из таблиц
 with st.sidebar:
     st.header("Выбор параметров")
 
-    # Проверка таблицы Группы
     try:
-        groups = get_data("SELECT * FROM Группы")  # Диагностика
-        st.write("Данные из таблицы 'Группы':", groups)
-
-        selected_group = st.selectbox(
-            "Группа", 
-            options=groups["название"].tolist() if "название" in groups.columns else []
-        )
+        groups = get_data("SELECT * FROM Группы")
+        if groups.empty:
+            st.error("Таблица 'Группы' пуста. Добавьте данные.")
+        else:
+            st.write("Данные из таблицы 'Группы':", groups)
+            selected_group = st.selectbox(
+                "Группа", 
+                options=groups["название"].tolist() if "название" in groups.columns else []
+            )
     except Exception as e:
         st.error(f"Ошибка загрузки данных для групп: {e}")
 
-    # Проверка таблицы Преподаватели
     try:
-        teachers = get_data("SELECT * FROM Преподаватели")  # Диагностика
-        st.write("Данные из таблицы 'Преподаватели':", teachers)
-
-        selected_teacher = st.selectbox(
-            "Преподаватель", 
-            options=[f"{row['имя']} {row['фамилия']}" for _, row in teachers.iterrows()] if "имя" in teachers.columns and "фамилия" in teachers.columns else []
-        )
+        teachers = get_data("SELECT * FROM Преподаватели")
+        if teachers.empty:
+            st.error("Таблица 'Преподаватели' пуста. Добавьте данные.")
+        else:
+            st.write("Данные из таблицы 'Преподаватели':", teachers)
+            selected_teacher = st.selectbox(
+                "Преподаватель", 
+                options=[f"{row['имя']} {row['фамилия']}" for _, row in teachers.iterrows()] if "имя" in teachers.columns and "фамилия" in teachers.columns else []
+            )
     except Exception as e:
         st.error(f"Ошибка загрузки данных для преподавателей: {e}")
 
-    # Проверка таблицы Аудитории
     try:
-        audiences = get_data("SELECT * FROM Аудитории")  # Диагностика
-        st.write("Данные из таблицы 'Аудитории':", audiences)
-
-        selected_audience = st.selectbox(
-            "Аудитория", 
-            options=audiences["номер"].tolist() if "номер" in audiences.columns else []
-        )
+        audiences = get_data("SELECT * FROM Аудитории")
+        if audiences.empty:
+            st.error("Таблица 'Аудитории' пуста. Добавьте данные.")
+        else:
+            st.write("Данные из таблицы 'Аудитории':", audiences)
+            selected_audience = st.selectbox(
+                "Аудитория", 
+                options=audiences["номер"].tolist() if "номер" in audiences.columns else []
+            )
     except Exception as e:
         st.error(f"Ошибка загрузки данных для аудиторий: {e}")
 
@@ -66,13 +69,13 @@ with st.sidebar:
 
 # Определение четности недели
 def get_week_parity(date):
-    base_date = datetime.date(2024, 9, 2)  # 2 сентября 2024
+    base_date = datetime.date(2024, 9, 2)
     delta_weeks = (date - base_date).days // 7
     return "нечетная" if delta_weeks % 2 == 0 else "четная"
 
 parity = get_week_parity(selected_date)
 
-# Формирование и выполнение запроса для расписания
+# Формирование запроса для расписания
 query = """
     SELECT 
         Дисциплины.название AS "Дисциплина",
@@ -97,6 +100,7 @@ query = """
 """
 params = (selected_group, selected_teacher, selected_audience, selected_building, parity)
 
+# Отображение расписания
 try:
     schedule = get_data(query, params)
     if schedule.empty:
