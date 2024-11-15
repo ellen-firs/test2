@@ -1,15 +1,15 @@
 import streamlit as st
-import pandas as pd
 import sqlite3
+import pandas as pd
 from datetime import datetime
 
-# Подключение к базе данных
+# Подключение к базе данных SQLite
 def get_connection():
     conn = sqlite3.connect("schedule.db")
     return conn
 
 # Загрузка расписания на основе фильтров
-def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, week_type=None, date=None):
+def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, date=None):
     conn = get_connection()
     query = """
     SELECT
@@ -41,11 +41,8 @@ def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, w
     if day:
         query += " AND Дни_недели.название = ?"
         params.append(day)
-    if week_type:
-        query += " AND Расписание.четность_недели = ?"
-        params.append(week_type)
     if date:
-        day_of_week = date.strftime('%A')
+        day_of_week = date.strftime('%A')  # Преобразуем дату в день недели
         query += " AND Дни_недели.название = ?"
         params.append(day_of_week)
 
@@ -53,30 +50,38 @@ def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, w
     conn.close()
     return schedule_df
 
-# Основная функция
+# Основная функция Streamlit
 def main():
     st.title("Расписание занятий")
-    
-    # Выбор группы
-    group_id = st.selectbox('Выберите группу', ['A-01-21', 'A-02-21', 'B-01-21'])  # Пример
+
     # Фильтры
+    group_id = st.selectbox('Выберите группу', ['A-01-21', 'A-02-21', 'B-01-21'])  # Пример
     teacher_id = st.selectbox('Выберите преподавателя', ['Преподаватель 1', 'Преподаватель 2'])  # Пример
     classroom_id = st.selectbox('Выберите аудиторию', ['C-409', 'B-308', 'M-307'])  # Пример
     date = st.date_input('Выберите дату', datetime.now())
 
+    # Выбор отображения: Список или Сетка
+    display_mode = st.radio("Выберите отображение:", ('Список', 'Сетка'))
+
     # Кнопки для отображения
     if st.button("Показать расписание"):
         schedule = load_schedule(group_id=group_id, teacher_id=teacher_id, classroom_id=classroom_id)
-        st.write(schedule)
+        if display_mode == 'Список':
+            st.write(schedule)
+        else:
+            st.table(schedule)
 
     if st.button("Показать расписание на сегодня"):
         schedule = load_schedule(group_id=group_id, date=date)
         if schedule.empty:
             st.write("Ура, выходной!")
         else:
-            st.write(schedule)
+            if display_mode == 'Список':
+                st.write(schedule)
+            else:
+                st.table(schedule)
 
-    # Выбор дня недели
+    # Выбор дня недели для отображения
     day_of_week = st.selectbox('Выберите день недели', ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'])
     
     if st.button(f"Показать расписание на {day_of_week}"):
@@ -84,7 +89,10 @@ def main():
         if schedule.empty:
             st.write("Ура, выходной!")
         else:
-            st.write(schedule)
+            if display_mode == 'Список':
+                st.write(schedule)
+            else:
+                st.table(schedule)
 
 if __name__ == "__main__":
     main()
