@@ -4,14 +4,16 @@ import streamlit as st
 
 # Функция для получения данных
 def get_data(query, params):
-    with sqlite3.connect('your_database.db') as conn:
-        df = pd.read_sql(query, conn, params=params)
+    conn = sqlite3.connect('your_database.db', check_same_thread=False)  # Отключаем проверку на поток
+    df = pd.read_sql(query, conn, params=params)
+    conn.close()
     return df
 
 # Получение уникальных значений для выбора из базы данных
 def get_choices(query):
-    with sqlite3.connect('your_database.db') as conn:
-        df = pd.read_sql(query, conn)
+    conn = sqlite3.connect('your_database.db', check_same_thread=False)  # Отключаем проверку на поток
+    df = pd.read_sql(query, conn)
+    conn.close()
     return df.iloc[:, 0].tolist()
 
 # Динамически загружаем данные для селектбоксов
