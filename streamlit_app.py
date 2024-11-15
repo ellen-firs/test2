@@ -1,39 +1,49 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
+import datetime
 
 # Подключение к базе данных
 @st.cache
 def get_connection():
-    conn = sqlite3.connect("schedule.db")  # Укажите путь к вашей базе данных
-    return conn
+    try:
+        conn = sqlite3.connect("schedule.db")  # Укажите путь к вашей базе данных
+        return conn
+    except Exception as e:
+        st.error(f"Ошибка подключения к базе данных: {e}")
 
 def get_data(query, params=()):
-    conn = get_connection()
-    return pd.read_sql_query(query, conn, params)
+    try:
+        conn = get_connection()
+        return pd.read_sql_query(query, conn, params)
+    except Exception as e:
+        st.error(f"Ошибка выполнения запроса: {e}")
+        return pd.DataFrame()
 
 st.title("Расписание")
 
 # Выбор параметров
 with st.sidebar:
     st.header("Выбор параметров")
-    selected_group = st.selectbox(
-        "Группа",
-        options=get_data("SELECT название FROM Группы")["название"].tolist()
-    )
-    selected_teacher = st.selectbox(
-        "Преподаватель",
-        options=[f"{row['имя']} {row['фамилия']}" for _, row in get_data("SELECT имя, фамилия FROM Преподаватели").iterrows()]
-    )
-    selected_audience = st.selectbox(
-        "Аудитория",
-        options=get_data("SELECT номер FROM Аудитории")["номер"].tolist()
-    )
-    selected_building = st.number_input("Корпус", min_value=1, step=1)
-    selected_date = st.date_input("Дата")
+    try:
+        groups = get_data("SELECT название FROM Группы")
+        selected_group = st.selectbox("Группа", options=groups["название"].tolist())
 
-# Определить четность недели
-import datetime
+        teachers = get_data("SELECT имя, фамилия FROM Преподаватели")
+        selected_teacher = st.selectbox(
+            "Преподаватель", 
+            options=[f"{row['имя']} {row['фамилия']}" for _, row in teachers.iterrows()]
+        )
+
+        audiences = get_data("SELECT номер FROM Аудитории")
+        selected_audience = st.selectbox("Аудитория", options=audiences["номер"].tolist())
+
+        selected_building = st.number_input("Корпус", min_value=1, step=1)
+        selected_date = st.date_input("Дата")
+    except Exception as e:
+        st.error(f"Ошибка загрузки данных: {e}")
+
+# Определение четности недели
 week_even = (selected_date.isocalendar()[1] % 2 == 0)
 parity = "четная" if week_even else "нечетная"
 
@@ -63,8 +73,11 @@ query = """
 params = (selected_group, selected_teacher, selected_audience, selected_building, parity)
 
 # Отображение расписания
-schedule = get_data(query, params)
-if schedule.empty:
-    st.warning("Расписание не найдено.")
-else:
-    st.dataframe(schedule)
+try:
+    schedule = get_data(query, params)
+    if schedule.empty:
+        st.warning("Расписание не найдено.")
+    else:
+        st.dataframe(schedule)
+except Exception as e:
+    st.error(f"Ошибка загрузки расписания: {e}")
