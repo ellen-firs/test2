@@ -39,7 +39,7 @@ parity = st.selectbox("Выберите четность недели", ['неч
 
 # Кнопка "Показать", чтобы выполнить запрос
 if st.button("Показать расписание"):
-    # Запрос для получения расписания
+    # Базовый запрос
     query = """
         SELECT 
             Дисциплины.название AS "Дисциплина",
@@ -56,14 +56,31 @@ if st.button("Показать расписание"):
         JOIN Дни_недели ON Расписание.день_id = Дни_недели.день_id
         JOIN Аудитории ON Расписание.аудитория_id = Аудитории.аудитория_id
         JOIN Группы ON Расписание.группа_id = Группы.группа_id
-        WHERE Группы.название = ?
-          AND Преподаватели.имя || ' ' || Преподаватели.фамилия = ?
-          AND Аудитории.номер = ?
-          AND Расписание.корпус = ?
-          AND Расписание.четность = ?
+        WHERE 1=1
     """
     
-    params = (selected_group, selected_teacher, selected_audience, selected_building, parity)
+    params = []
+
+    # Добавление условий в запрос в зависимости от выбранных значений
+    if selected_group:
+        query += " AND Группы.название = ?"
+        params.append(selected_group)
+    
+    if selected_teacher:
+        query += " AND Преподаватели.имя || ' ' || Преподаватели.фамилия = ?"
+        params.append(selected_teacher)
+    
+    if selected_audience:
+        query += " AND Аудитории.номер = ?"
+        params.append(selected_audience)
+    
+    if selected_building:
+        query += " AND Расписание.корпус = ?"
+        params.append(selected_building)
+    
+    if parity:
+        query += " AND Расписание.четность = ?"
+        params.append(parity)
 
     # Получение данных из базы данных
     schedule = get_data(query, params)
