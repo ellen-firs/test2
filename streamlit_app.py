@@ -1,39 +1,12 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
+import sqlite3
 from datetime import datetime
 
-# Подключение к базе данных SQLite
+# Подключение к базе данных
 def get_connection():
-    return sqlite3.connect("schedule.db")
-
-# Загрузка групп из базы данных
-def load_groups():
-    conn = get_connection()
-    groups_df = pd.read_sql("SELECT группа_id, название FROM Группы", conn)
-    conn.close()
-    return groups_df
-
-# Загрузка преподавателей из базы данных
-def load_teachers():
-    conn = get_connection()
-    teachers_df = pd.read_sql("SELECT преподаватель_id, имя || ' ' || фамилия AS имя_фамилия FROM Преподаватели", conn)
-    conn.close()
-    return teachers_df
-
-# Загрузка аудиторий из базы данных
-def load_classrooms():
-    conn = get_connection()
-    classrooms_df = pd.read_sql("SELECT аудитория_id, номер FROM Аудитории", conn)
-    conn.close()
-    return classrooms_df
-
-# Загрузка дней недели из базы данных
-def load_days_of_week():
-    conn = get_connection()
-    days_df = pd.read_sql("SELECT день_id, название FROM Дни_недели ORDER BY день_id", conn)
-    conn.close()
-    return days_df
+    conn = sqlite3.connect("schedule.db")
+    return conn
 
 # Загрузка расписания на основе фильтров
 def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, week_type=None, date=None):
@@ -80,44 +53,38 @@ def load_schedule(group_id=None, teacher_id=None, classroom_id=None, day=None, w
     conn.close()
     return schedule_df
 
-# Определение типа недели (четная/нечетная)
-def get_week_type():
-    current_week = datetime.now().isocalendar()[1]
-    return 'четная' if current_week % 2 == 0 else 'нечетная'
-
-# Интерфейс Streamlit
-st.title("Расписание занятий")
-
-# Загрузка данных
-groups = load_groups()
-teachers = load_teachers()
-classrooms = load_classrooms()
-days_of_week = load_days_of_week()
-
-# Фильтры
-selected_group = st.selectbox("Выберите группу:", ["Все"] + list(groups['название']))
-selected_teacher = st.selectbox("Выберите преподавателя:", ["Все"] + list(teachers['имя_фамилия']))
-selected_classroom = st.selectbox("Выберите аудиторию:", ["Все"] + list(classrooms['номер']))
-week_type = st.selectbox("Выберите тип недели:", ["четная", "нечетная"])
-selected_day = st.selectbox("Выберите день недели:", ["Все"] + list(days_of_week['название']))
-selected_date = st.date_input("Выберите дату")
-
-# Выбор отображения
-display_option = st.radio("Выберите формат отображения:", ["Список", "Сетка"])
-
-# Кнопка для отображения расписания
-if st.button("Показать расписание"):
-    group_id = groups.loc[groups['название'] == selected_group, 'группа_id'].iloc[0] if selected_group != "Все" else None
-    teacher_id = teachers.loc[teachers['имя_фамилия'] == selected_teacher, 'преподаватель_id'].iloc[0] if selected_teacher != "Все" else None
-    classroom_id = classrooms.loc[classrooms['номер'] == selected_classroom, 'аудитория_id'].iloc[0] if selected_classroom != "Все" else None
-    day = selected_day if selected_day != "Все" else None
-
-    schedule = load_schedule(group_id, teacher_id, classroom_id, day, week_type, selected_date)
+# Основная функция
+def main():
+    st.title("Расписание занятий")
     
-    if schedule.empty:
-        st.write("Ура, выходной!")
-    else:
-        if display_option == "Список":
+    # Выбор группы
+    group_id = st.selectbox('Выберите группу', ['A-01-21', 'A-02-21', 'B-01-21'])  # Пример
+    # Фильтры
+    teacher_id = st.selectbox('Выберите преподавателя', ['Преподаватель 1', 'Преподаватель 2'])  # Пример
+    classroom_id = st.selectbox('Выберите аудиторию', ['C-409', 'B-308', 'M-307'])  # Пример
+    date = st.date_input('Выберите дату', datetime.now())
+
+    # Кнопки для отображения
+    if st.button("Показать расписание"):
+        schedule = load_schedule(group_id=group_id, teacher_id=teacher_id, classroom_id=classroom_id)
+        st.write(schedule)
+
+    if st.button("Показать расписание на сегодня"):
+        schedule = load_schedule(group_id=group_id, date=date)
+        if schedule.empty:
+            st.write("Ура, выходной!")
+        else:
             st.write(schedule)
-        elif display_option == "Сетка":
-            st.write(schedule.style.set_properties(**{'text-align': 'center'}))
+
+    # Выбор дня недели
+    day_of_week = st.selectbox('Выберите день недели', ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'])
+    
+    if st.button(f"Показать расписание на {day_of_week}"):
+        schedule = load_schedule(group_id=group_id, day=day_of_week)
+        if schedule.empty:
+            st.write("Ура, выходной!")
+        else:
+            st.write(schedule)
+
+if __name__ == "__main__":
+    main()
