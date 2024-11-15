@@ -30,18 +30,26 @@ def get_week_parity(date):
     week_number = delta.days // 7
     return 'нечетная' if week_number % 2 != 0 else 'четная'
 
+# Функция для определения дня недели
+def get_day_of_week(date):
+    return date.strftime("%A")  # Получаем день недели в формате, например, 'Monday'
+
 # Загружаем доступные значения для селектбоксов
 groups = get_choices("SELECT название FROM Группы")
 teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
 audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
-parity_options = ['нечетная', 'четная']
 
 # Выбор даты
 selected_date = st.date_input("Выберите дату", datetime.today())
 
-# Определяем четность недели на основе выбранной даты
+# Определяем день недели и четность недели на основе выбранной даты
+day_of_week = get_day_of_week(selected_date)
 week_parity = get_week_parity(selected_date)
+
+# Отображаем выбранные день недели и четность
+st.write(f"Выбранная дата: {selected_date}")
+st.write(f"Это {day_of_week} и {week_parity} неделя.")
 
 # Селектбоксы для выбора параметров
 selected_group = st.selectbox("Выберите группу", [""] + groups)
