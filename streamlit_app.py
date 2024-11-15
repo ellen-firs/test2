@@ -14,30 +14,31 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Стилизация селектбоксов и кнопки */
+    /* Стилизация рамок селектбоксов и кнопки с нейтральным цветом */
     .stSelectbox, .stButton {
         border-radius: 10px;
-        background-color: #e1f5d3;
+        background-color: #f5f5f5; /* светло-серый */
         padding: 5px;
+        box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.1); /* легкий тень */
     }
 
     /* Стилизация таблицы */
     .stDataFrame table {
-        border: 1px solid #4a7c59;
+        border: 1px solid #cccccc; /* нейтральная светло-серая рамка */
     }
     .stDataFrame table th {
-        background-color: #b2d8b0;
-        color: #4a7c59;
+        background-color: #eaeaea; /* светлый фон заголовка */
+        color: #333333; /* темно-серый текст */
     }
     .stDataFrame table td {
-        background-color: #f7fff7;
+        background-color: #fdfdfd; /* почти белый фон ячеек */
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("📅 Расписание занятий")
 
-# Функция для получения данных из базы данных
+# Функции для работы с данными
 def get_data(query, params):
     conn = sqlite3.connect('schedule.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -47,7 +48,6 @@ def get_data(query, params):
     conn.close()
     return pd.DataFrame(rows, columns=columns)
 
-# Функции для получения выборов
 def get_choices(query):
     conn = sqlite3.connect('schedule.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -83,7 +83,7 @@ types_of_classes = ['лекция', 'практика']
 
 # Селектбоксы для выбора параметров
 st.sidebar.header("Фильтры")
-selected_date = st.sidebar.date_input("Дата (не обязательно)")
+selected_date = st.sidebar.date_input("Дата (не обязательно)", value=None)
 selected_group = st.sidebar.selectbox("Группа", [""] + groups)
 selected_teacher = st.sidebar.selectbox("Преподаватель", [""] + teachers)
 selected_audience = st.sidebar.selectbox("Аудитория", [""] + audiences)
