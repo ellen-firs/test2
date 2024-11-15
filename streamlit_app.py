@@ -4,13 +4,10 @@ import pandas as pd
 import datetime
 
 # Подключение к базе данных
-@st.cache
+@st.cache_resource
 def get_connection():
-    try:
-        conn = sqlite3.connect("schedule.db")  # Укажите путь к вашей базе данных
-        return conn
-    except Exception as e:
-        st.error(f"Ошибка подключения к базе данных: {e}")
+    conn = sqlite3.connect("schedule.db")  # Укажите путь к вашей базе данных
+    return conn
 
 def get_data(query, params=()):
     try:
@@ -44,8 +41,13 @@ with st.sidebar:
         st.error(f"Ошибка загрузки данных: {e}")
 
 # Определение четности недели
-week_even = (selected_date.isocalendar()[1] % 2 == 0)
-parity = "четная" if week_even else "нечетная"
+# Учитываем, что 2 сентября 2024 — это нечетная неделя
+def get_week_parity(date):
+    base_date = datetime.date(2024, 9, 2)  # 2 сентября 2024
+    delta_weeks = (date - base_date).days // 7
+    return "нечетная" if delta_weeks % 2 == 0 else "четная"
+
+parity = get_week_parity(selected_date)
 
 # Формирование запроса
 query = """
