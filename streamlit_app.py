@@ -49,6 +49,7 @@ groups = get_choices("SELECT название FROM Группы")
 teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
 audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
+disciplines = get_choices("SELECT название FROM Дисциплины")  # Добавляем дисциплины
 
 # Выбор даты
 selected_date = st.date_input("Выберите дату (необязательно)", value=None)
@@ -62,6 +63,7 @@ selected_group = st.selectbox("Выберите группу", [""] + groups)
 selected_teacher = st.selectbox("Выберите преподавателя", [""] + teachers)
 selected_audience = st.selectbox("Выберите аудиторию", [""] + audiences)
 selected_building = st.selectbox("Выберите корпус", [""] + buildings)
+selected_discipline = st.selectbox("Выберите дисциплину", [""] + disciplines)  # Добавляем выбор дисциплины
 
 # Определяем день недели и четность недели на основе выбранной даты
 if selected_date:
@@ -114,6 +116,10 @@ if st.button("Показать расписание"):
     if selected_building:
         query += " AND Расписание.корпус = ?"
         params.append(selected_building)
+    
+    if selected_discipline:
+        query += " AND Дисциплины.название = ?"
+        params.append(selected_discipline)
     
     # Если дата выбрана, то добавляем фильтрацию по четности недели и дню недели
     if selected_date:
