@@ -2,34 +2,42 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 
-# Функция для получения данных
+# Функция для получения данных из базы данных
 def get_data(query, params):
     conn = sqlite3.connect('schedule.db', check_same_thread=False)  # Отключаем проверку на поток
-    df = pd.read_sql(query, conn, params=params)
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    columns = [description[0] for description in cursor.description]
+    rows = cursor.fetchall()
     conn.close()
-    return df
+    
+    # Преобразуем результат в DataFrame
+    return pd.DataFrame(rows, columns=columns)
 
-# Получение уникальных значений для выбора из базы данных
+# Функция для получения доступных опций из базы данных
 def get_choices(query):
     conn = sqlite3.connect('schedule.db', check_same_thread=False)  # Отключаем проверку на поток
-    df = pd.read_sql(query, conn)
+    cursor = conn.cursor()
+    cursor.execute(query)
+    rows = cursor.fetchall()
     conn.close()
-    return df.iloc[:, 0].tolist()
+    
+    return [row[0] for row in rows]
 
-# Динамически загружаем данные для селектбоксов
+# Загружаем доступные значения для селектбоксов
 groups = get_choices("SELECT название FROM Группы")
 teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
 audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
 
-# Отображаем селектбоксы
+# Селектбоксы
 selected_group = st.selectbox("Выберите группу", groups)
 selected_teacher = st.selectbox("Выберите преподавателя", teachers)
 selected_audience = st.selectbox("Выберите аудиторию", audiences)
 selected_building = st.selectbox("Выберите корпус", buildings)
 parity = st.selectbox("Выберите четность недели", ['нечетная', 'четная'])
 
-# Выполнение SQL-запроса с параметрами
+# Запрос для получения расписания
 query = """
     SELECT 
         Дисциплины.название AS "Дисциплина",
@@ -55,7 +63,7 @@ query = """
 
 params = (selected_group, selected_teacher, selected_audience, selected_building, parity)
 
-# Получение данных из базы
+# Получение данных из базы данных
 schedule = get_data(query, params)
 
 # Отображение результатов
