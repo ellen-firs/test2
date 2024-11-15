@@ -49,32 +49,28 @@ groups = get_choices("SELECT название FROM Группы")
 teachers = get_choices("SELECT имя || ' ' || фамилия FROM Преподаватели")
 audiences = get_choices("SELECT номер FROM Аудитории")
 buildings = get_choices("SELECT DISTINCT корпус FROM Расписание")
-disciplines = get_choices("SELECT название FROM Дисциплины")  # Добавляем дисциплины
+types_of_classes = ['лекция', 'практика']  # Типы занятий
 
 # Выбор даты
-selected_date = st.date_input("Выберите дату (необязательно)", value=None)
+selected_date = st.date_input("Выберите дату", datetime.today())
 
-# Преобразуем строку в объект datetime, если дата выбрана
-if selected_date:
-    selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
+# Преобразуем строку в объект datetime
+selected_date = datetime.strptime(str(selected_date), '%Y-%m-%d')
+
+# Определяем день недели и четность недели на основе выбранной даты
+day_of_week = get_day_of_week(selected_date)
+week_parity = get_week_parity(selected_date)
+
+# Отображаем выбранные день недели и четность
+st.write(f"Выбранная дата: {selected_date.date()}")
+st.write(f"Это {day_of_week} и {week_parity} неделя.")
 
 # Селектбоксы для выбора параметров
 selected_group = st.selectbox("Выберите группу", [""] + groups)
 selected_teacher = st.selectbox("Выберите преподавателя", [""] + teachers)
 selected_audience = st.selectbox("Выберите аудиторию", [""] + audiences)
 selected_building = st.selectbox("Выберите корпус", [""] + buildings)
-selected_discipline = st.selectbox("Выберите дисциплину", [""] + disciplines)  # Добавляем выбор дисциплины
-
-# Определяем день недели и четность недели на основе выбранной даты
-if selected_date:
-    day_of_week = get_day_of_week(selected_date)
-    week_parity = get_week_parity(selected_date)
-    st.write(f"Выбранная дата: {selected_date.date()}")
-    st.write(f"Это {day_of_week} и {week_parity} неделя.")
-else:
-    # Если дата не выбрана, то день недели и четность не вычисляются
-    day_of_week = None
-    week_parity = None
+selected_type = st.selectbox("Выберите тип занятия", [""] + types_of_classes)  # Выбор типа занятия
 
 # Кнопка "Показать", чтобы выполнить запрос
 if st.button("Показать расписание"):
@@ -87,7 +83,8 @@ if st.button("Показать расписание"):
             Дни_недели.название AS "День недели",
             Аудитории.номер AS "Аудитория",
             Расписание.корпус AS "Корпус",
-            Группы.название AS "Группа"
+            Группы.название AS "Группа",
+            Расписание.тип_занятия AS "Тип занятия"  -- Добавляем тип занятия
         FROM Расписание
         JOIN Дисциплины ON Расписание.дисциплина_id = Дисциплины.дисциплина_id
         JOIN Преподаватели ON Расписание.преподаватель_id = Преподаватели.преподаватель_id
@@ -117,18 +114,19 @@ if st.button("Показать расписание"):
         query += " AND Расписание.корпус = ?"
         params.append(selected_building)
     
-    if selected_discipline:
-        query += " AND Дисциплины.название = ?"
-        params.append(selected_discipline)
+    # Добавляем проверку по четности недели
+    query += " AND Расписание.четность = ?"
+    params.append(week_parity)
     
-    # Если дата выбрана, то добавляем фильтрацию по четности недели и дню недели
-    if selected_date:
-        query += " AND Расписание.четность = ?"
-        params.append(week_parity)
-        
-        query += " AND Дни_недели.название = ?"
-        params.append(day_of_week)
+    # Добавляем фильтрацию по дню недели
+    query += " AND Дни_недели.название = ?"
+    params.append(day_of_week)
     
+    # Добавляем фильтрацию по типу занятия (лекция или практика)
+    if selected_type:
+        query += " AND Расписание.тип_занятия = ?"
+        params.append(selected_type)
+
     # Получаем данные из базы
     schedule = get_data(query, params)
 
@@ -139,5 +137,4 @@ if st.button("Показать расписание"):
         st.dataframe(schedule)
 
     # Показать выбранную четность недели
-    if selected_date:
-        st.write(f"Выбрана четность недели: {week_parity}")
+    st.write(f"Выбрана четность недели: {week_parity}")
